@@ -1,0 +1,20 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <title>Parser</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="stylesheet" href="{% static 'parser_ozon_wb/css/styles.css' %}" type="text/css">
+  <link rel="shorcut icon" href="{% static 'parser_ozon_wb/images/favicon.png' %}" type="image/x-icon">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+</head>
+<body>
+  {% include 'parser_ozon_wb/includes/navbar.html' %}
+  <div class="container">
+    {% block content %}
+    {% endblock %}
+  </div>
+  {% include 'parser_ozon_wb/includes/footer.html' %}
+</body>
+</html>

@@ -1,0 +1,151 @@
+{% extends 'parser_ozon_wb/base.html' %}
+{% load static %}
+{% block content %}
+    <div class="block-title">Сбор данных</div>
+    <input class="input-link" type="text" id="input-url" placeholder="Ссылка на таблицу">
+    <div class="block-parsing">
+        <div class="block-wb">
+            <div class="block-parsing-name">Wildberries и Ozon</div>
+            <div class="sub-block-parsing">
+                <div class="counter" id="counter">0/0</div>
+                <div class="buttons">
+                    <button class="button" id="btn-parse-wb"><img src="{% static 'parser_ozon_wb/images/wb.png' %}" alt=""><span>Парсить WB</span></button>
+                    <button class="button" id="btn-parse-ozon"><img src="{% static 'parser_ozon_wb/images/ozon.png' %}" alt=""><span>Парсить OZON</span></button>
+                </div>
+                <div class="description-block"><span class="description-button">Кнопки будут анализировать последние 10 отзывов, <br> артикулы, цены, брэнды и ссылки. Для полноценной <br> работы необходимо вставить ссылку на таблицу в поле <br> ввода и заполнить её, примером может быть данная <br> таблица: https://shorturl.at/bjU69. Также не забудьте <br> предоставить общий доступ к файлу.</span></div>
+            </div>
+        </div>
+        <div class="block-ozon">
+            <div class="block-parsing-name">Сравнивать</div>
+            <div class="sub-block-parsing">
+                <form id="upload-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="file" id="fileInput" style="display:none;" name="file1" accept=".xlsx, .csv">
+                    <input type="file" id="fileInput2" style="display:none;" name="file2" accept=".xlsx, .csv">
+                    <div class="buttons" style="margin-top: 0px;">
+                        <button type="button" class="button" onclick="document.getElementById('fileInput').click()">
+                            <img src="{% static 'parser_ozon_wb/images/wb.png' %}" alt=""><span>Загрузить WB</span>
+                        </button>
+                        <button type="button" class="button" onclick="document.getElementById('fileInput2').click()">
+                            <img src="{% static 'parser_ozon_wb/images/ozon.png' %}" alt=""><span>Загрузить OZON</span>
+                        </button>
+                    </div>
+                    <button class="button" style="margin-top: 20px; justify-content: center;" type="submit">Сравнить</button>
+                </form>
+                <div class="description-block"><span class="description-button">После проведения парсинга, загрузите два файла и <br> нажмите на кнопку "Сравнить". В листе "Справочник" <br> (https://shorturl.at/gktMR) вы можете указать <br> необходимый артикул для сравнения и поле с ценой. В <br> итоговом файле будет осуществлено объединение по <br> артикулу из "Справочника".</span></div>
+            </div>
+        </div>
+    </div>
+    <div style="display:none;">
+        </div>
+    <script>
+        let now = new Date();
+        let isoDate = now.toISOString();
+        $('#btn-parse-wb').click(function() {
+            var url = $('#input-url').val();
+            counterInterval = setInterval(function() {
+
+              $.get('/status', {'file_name': 'wb_'+isoDate}, function(data) {
+                e.preventDefault();
+                $('#counter').text(data.count+'/'+data.quantity);
+              }, 'json');
+
+            },8000);
+            $.ajax({
+                url: '/parse-wb',
+                data: {
+                    'url': url,
+                    'file_name': 'wb_'+isoDate
+                },
+                dataType: 'binary',
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(blob) {
+                    $('#counter').text('0/0');
+                    var link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'wb.xlsx';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    clearInterval(counterInterval);
+               },
+	       error: function() {
+                   clearInterval(counterInterval);
+
+                     
+            }
+	    
+			});
+        });
+
+        $('#btn-parse-ozon').click(function() {
+
+          var url = $('#input-url').val();
+          counterInterval = setInterval(function() {
+
+              $.get('/status', {'file_name': 'ozon_'+isoDate}, function(data) {
+                $('#counter').text(data.count+'/'+data.quantity);
+              });
+
+          }, 8000);
+          $.ajax({
+            url: '/parse-ozon/',
+            data: {
+                    'url': url,
+                    'file_name': 'ozon_'+isoDate
+                },
+            dataType: 'binary',
+            xhrFields: {
+                responseType: 'blob'
+            },
+            success: function(blob) {
+                $('#counter').text('0/0');
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'ozon.xlsx';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                clearInterval(counterInterval);
+            },
+           error: function() {
+               clearInterval(counterInterval);
+
+
+            }
+
+          });
+
+        });
+        $('#upload-form').submit(function(e) {
+            e.preventDefault();
+
+            var formData = new FormData(this);
+            var url = $('#input-url').val(); // Получаем значение ссылки
+            formData.append('file_name', 'compare_'+isoDate);
+            formData.append('url', url); // Добавляем ссылку к данным формы
+
+            $.ajax({
+                url: '/compare-files/',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'binary',
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(blob) {
+                    var link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'compare.xlsx';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            });
+        });
+    </script>
+{% endblock %}
